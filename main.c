@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include "stack.h"
+#include "operations.h"
 
 #define MAX_INPUT_SIZE 1000
 #define MAX_TOKEN_SIZE 50
@@ -111,6 +112,17 @@ int main() {
         return 1;
     }
     
+    char* error_message = NULL;
+    if (validate_expression(tokens, token_count, &error_message) == OP_FAILURE) {
+        if (error_message != NULL) {
+            printf("Error: %s\n", error_message);
+        } else {
+            printf("Invalid expression\n");
+        }
+        free_tokens(tokens, token_count);
+        return 1;
+    }
+    
     for (int i = 0; i < token_count; i++) {
         char* endptr;
         int value = (int)strtol(tokens[i], &endptr, 10);
@@ -123,18 +135,32 @@ int main() {
             }
             printf("Pushed: %d\n", value);
         } else {
-            
             printf("Found operator: %s\n", tokens[i]);
+            
+            if (is_valid_operator(tokens[i])) {
+                int result = execute_operation(&operands, tokens[i]);
+                
+                if (result == OP_SUCCESS) {
+                    int top_value;
+                    if (stack_peek(&operands, &top_value)) {
+                        printf("Operation result: %d\n", top_value);
+                    }
+                } else {
+                    printf("Operation failed\n");
+                }
+            } else {
+                printf("Error: Unknown operator '%s'\n", tokens[i]);
+            }
         }
     }
     
-    printf("\nStack content:\n");
-    Stack temp_stack = operands; 
-    
-    while (!stack_is_empty(&temp_stack)) {
-        int value;
-        stack_pop(&temp_stack, &value);
-        printf("%d\n", value);
+    if (!stack_is_empty(&operands)) {
+        int result;
+        stack_pop(&operands, &result);
+        printf("\nFinal result: %d\n", result);
+        
+    } else {
+        printf("\nNo result\n");
     }
     
     free_tokens(tokens, token_count);
